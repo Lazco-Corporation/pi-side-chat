@@ -1,0 +1,16 @@
+docs/verification.md
+  h_62d5984d259ab3 137-147
+src/sideChat.ts
+  h_62d5984d259ab3 364-365
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01a5c1005bd16eb853f95de582e5a64c4c64aa5d",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
