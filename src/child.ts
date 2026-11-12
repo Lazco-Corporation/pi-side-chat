@@ -22,7 +22,7 @@ import {
 export const BUILTIN_TOOL_NAMES = ["read", "bash", "edit", "write", "grep", "find", "ls"] as const;
 
 /** Pi's own thinking levels, which `createAgentSession` accepts. */
-export type ThinkingLevel = NonNullable<Parameters<typeof createAgentSession>[0]>["thinkingLevel"];
+export type ThinkingLevel = NonNullable<NonNullable<Parameters<typeof createAgentSession>[0]>["thinkingLevel"]>;
 
 export interface ChildSessionInput {
   cwd: string;

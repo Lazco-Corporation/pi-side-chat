@@ -1,3 +1,4 @@
+import type { Api, Model } from "@earendil-works/pi-ai";
 import type {
   BeforeAgentStartEvent,
   BeforeAgentStartEventResult,
@@ -25,8 +26,9 @@ import {
   staleFileReason,
 } from "./changes.ts";
 import { chooseForkPoint } from "./fork.ts";
+import { ModelPicker, modelKey } from "./modelPicker.ts";
 import { type OverlayNotice, SideChatOverlay } from "./overlay.ts";
-import { type MainThread, SideChat, type SideChatHooks } from "./sideChat.ts";
+import { BUSY_SETTING_MESSAGE, type MainThread, SideChat, type SideChatHooks } from "./sideChat.ts";
 
 const BRING_BACK_STATUS_KEY = "side-chat-bring-back";
 
@@ -77,6 +79,22 @@ export class SideChatRegistry {
         details: { sideChatId: pending.sideChatId, title: pending.title },
       },
     };
+  }
+
+  private async pickModel(sideChat: SideChat, ctx: ExtensionCommandContext): Promise<OverlayNotice | undefined> {
+    if (sideChat.busy) return { text: BUSY_SETTING_MESSAGE, tone: "warning" };
+    const model = await ctx.ui.custom<Model<Api> | undefined>(
+      (_tui, theme, keybindings, done) =>
+        new ModelPicker({ theme, keybindings, models: ctx.modelRegistry.getAvailable(), current: sideChat.model, done }),
+      { overlay: true, overlayOptions: { width: "60%", minWidth: 40, anchor: "center" } },
+    );
+    if (!model) return undefined;
+    try {
+      await sideChat.setModel(model);
+      return { text: `Model: ${modelKey(model)}, thinking ${sideChat.thinkingLevel ?? "off"}, from the next run on.`, tone: "success" };
+    } catch (error) {
+      return { text: error instanceof Error ? error.message : String(error), tone: "error" };
+    }
   }
 
   private bringBack(sideChat: SideChat, ctx: ExtensionCommandContext): OverlayNotice {
@@ -178,6 +196,7 @@ export class SideChatRegistry {
           actions: {
             close: () => done(),
             bringBack: () => this.bringBack(sideChat, ctx),
+            pickModel: () => this.pickModel(sideChat, ctx),
             delete: () => {
               void (async () => {
                 if (sideChat.hasMessages) {

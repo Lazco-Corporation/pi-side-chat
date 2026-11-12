@@ -51,6 +51,8 @@ export interface SideChatOverlayActions {
   delete: () => void;
   /** Queues the side chat for the main thread's next message, or says why not. */
   bringBack: () => OverlayNotice;
+  /** Opens the model list over the overlay. Resolves with what to tell the user, if anything. */
+  pickModel: () => Promise<OverlayNotice | undefined>;
 }
 
 export interface SideChatOverlayOptions {
@@ -168,6 +170,17 @@ export class SideChatOverlay implements Component, Focusable {
       );
     } else if (data === "d") {
       this.actions.delete();
+    } else if (data === "m") {
+      void this.actions.pickModel().then((notice) => {
+        if (notice) this.showNotice(notice.text, notice.tone);
+      });
+    } else if (data === "t") {
+      try {
+        const level = this.sideChat.cycleThinkingLevel();
+        this.showNotice(`Thinking: ${level}, from the next run on.`, "success");
+      } catch (error) {
+        this.showNotice(error instanceof Error ? error.message : String(error), "warning");
+      }
     } else if (data === "b") {
       const notice = this.actions.bringBack();
       this.showNotice(notice.text, notice.tone);
@@ -426,11 +439,13 @@ export class SideChatOverlay implements Component, Focusable {
     const close = hint("esc", this.sideChat.busy ? "stop" : "close");
     const ask = hint("tab", "ask");
     const mode = hint("p", this.sideChat.mode === "ask" ? "auto mode" : "ask mode");
+    const model = this.sideChat.busy ? [] : [hint("m", "model"), hint("t", "thinking")];
     const copy = lastAssistantText(this.sideChat.transcript()) !== undefined ? [hint("c", "copy")] : [];
     const remove = hint("d", "delete");
     const bringBack = this.sideChat.busy || copy.length === 0 ? [] : [hint("b", "bring back")];
     const candidates = [
-      [...approve, ask, ...bringBack, mode, ...copy, remove, close],
+      [...approve, ask, ...bringBack, mode, ...model, ...copy, remove, close],
+      [...approve, ask, ...bringBack, mode, ...model, remove, close],
       [...approve, ask, ...bringBack, mode, remove, close],
       [...approve, ask, ...bringBack, close],
       [...approve, ask, close],

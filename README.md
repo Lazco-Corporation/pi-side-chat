@@ -10,6 +10,7 @@ Ask a question without adding to the thread, while the main agent keeps working.
 - **The main agent keeps working.** A side chat runs as its own agent session, so it never interrupts the main run.
 - **It knows what the thread knows.** It starts from the main conversation, plus a digest of what the main agent did since its last settled point.
 - **Real tools.** The side chat can `read`, `grep`, `find`, `ls`, run `bash`, `edit`, and `write` in the same working directory.
+- **Its own model.** Each side chat can switch its model and thinking level without touching the main session.
 - **Changes ask first.** The first run of a side chat asks before every `bash`, `edit`, and `write`. After that, its mode decides.
 - **Bring back what you learned.** One key puts the side chat into the main thread's next message.
 - **The main agent is not blindsided.** It learns which files a side chat changed, and its first write to such a file is stopped until it reads the file again.
@@ -52,6 +53,8 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 | `y` / `n` | Approve or deny the call that waits |
 | `b` | Bring the side chat back to the main thread |
 | `p` | Switch between `ask` and `auto` |
+| `m` | Choose the side chat's model |
+| `t` | Step to the next thinking level |
 | `c` | Copy the newest reply as Markdown |
 | `d` | Delete the side chat, after a confirmation |
 | `↑` `↓` `j` `k`, mouse wheel | Scroll one line |
@@ -63,6 +66,23 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 
 In the input line, `Enter` sends and `Esc` goes back to the keys, with your text kept.
 A message that you send while the side chat runs waits for the run to end.
+
+## Model and thinking level
+
+A new side chat uses the main session's model and thinking level at the time you open it.
+Later changes in the main session do not reach a side chat that is already open.
+
+Press `m` to choose another model for this side chat.
+The list holds the models that have a key or a login, with the current one marked.
+Type to filter it, then press `Enter` to choose or `Esc` to cancel.
+The thinking level stays, or becomes the nearest level that the new model supports.
+Press `t` to step through the thinking levels that the model supports.
+
+Both keys change only this side chat, from its next run on.
+The main session and your default model stay as they are.
+While the side chat runs, both keys wait: let the run end, or press `Esc` to stop it.
+
+To ask a cheap model from the first question, open an empty side chat with `/side`, press `Esc`, press `m`, and then ask.
 
 ## Approvals
 
@@ -121,7 +141,7 @@ The note is at most 8000 characters, and keeps the newest lines.
 
 The `main_thread_read` tool reads the same digest again at any time, with the main agent's current state, so the side chat can follow a long main run.
 
-The side chat uses the main session's system prompt, model, and thinking level.
+The side chat uses the main session's system prompt, and starts with its model and thinking level.
 It loads no extensions, skills, or context files of its own, so it has only the tools listed above.
 
 ## Limitations
@@ -129,6 +149,7 @@ It loads no extensions, skills, or context files of its own, so it has only the 
 - **Interactive mode only.** In RPC, JSON, and print mode, the commands only warn.
 - **Each first question costs a full read.** The side chat has other tools than the main session, so the provider cannot reuse the main session's prompt cache. The first run reads the whole conversation at full price.
 - **`bash` changes are not tracked.** A side chat that changes files with `npm install`, `sed -i`, or `git checkout` sends no note, and the main agent is not stopped.
+- **A small model can misread the main thread.** In tests of pi-recap, small models sometimes reported a finished step as open. A side chat on a cheap model can describe the state of the main thread wrongly.
 - **No extension tools.** The side chat has no MCP tools, no web search, and no other extension tools.
 
 ## Contributing

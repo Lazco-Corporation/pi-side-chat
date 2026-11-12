@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Api, Model } from "@earendil-works/pi-ai";
+import { type Api, clampThinkingLevel, type Model } from "@earendil-works/pi-ai";
 import {
   type AgentSession,
   type ExtensionFactory,
@@ -13,6 +13,7 @@ import { createChildSession, type ThinkingLevel } from "./child.ts";
 import { buildSideChatContext } from "./context.ts";
 import { activitySince, type ForkPoint } from "./fork.ts";
 import { createMainThreadReadTool } from "./mainThreadRead.ts";
+import { modelKey, nextThinkingLevel } from "./modelPicker.ts";
 import { streamingText, type TranscriptItem, transcriptFromEntries } from "./transcript.ts";
 
 /**
@@ -27,6 +28,7 @@ export const SIDE_CHAT_ENTRY_TYPE = "side-chat";
 /** The custom message that carries the side chat context with the first question. */
 export const SIDE_CHAT_CONTEXT_TYPE = "side-chat-context";
 export const DEFAULT_TITLE = "Side chat";
+export const BUSY_SETTING_MESSAGE = "Wait for this run to end, or press esc to stop it.";
 const TITLE_MAX_CHARS = 60;
 
 /** What a side chat reads from the main session. */
@@ -161,6 +163,37 @@ export class SideChat {
     const branch = this.session.sessionManager.getBranch();
     const markerIndex = branch.findIndex((entry) => entry.type === "custom" && entry.customType === SIDE_CHAT_ENTRY_TYPE);
     return branch.slice(markerIndex + 1);
+  }
+
+  /**
+   * Changes the model from the next run on. The thinking level stays, or becomes the nearest level
+   * that the new model supports. Throws when the side chat runs or the model has no key or login.
+   */
+  async setModel(model: Model<Api>): Promise<void> {
+    if (this.runActive) throw new Error(BUSY_SETTING_MESSAGE);
+    const level = this.thinkingLevel;
+    const keptLevel = level === undefined ? undefined : (clampThinkingLevel(model, level) as ThinkingLevel);
+    if (this.session) {
+      await this.session.setModel(model);
+      if (keptLevel !== undefined) this.session.setThinkingLevel(keptLevel);
+    } else {
+      if (!this.main.modelRegistry.hasConfiguredAuth(model)) throw new Error(`No API key or login for ${modelKey(model)}.`);
+      this.draftModel = model;
+      this.draftThinkingLevel = keptLevel;
+    }
+    this.changed();
+  }
+
+  /** Steps to the next thinking level that the model supports, from the next run on. */
+  cycleThinkingLevel(): ThinkingLevel {
+    if (this.runActive) throw new Error(BUSY_SETTING_MESSAGE);
+    const model = this.model;
+    if (!model) throw new Error("Choose a model first.");
+    const next = nextThinkingLevel(model, this.thinkingLevel);
+    if (this.session) this.session.setThinkingLevel(next);
+    else this.draftThinkingLevel = next;
+    this.changed();
+    return next;
   }
 
   togglePermissionMode(): void {

@@ -81,3 +81,18 @@ Run on 2026-11-12 with `--no-extensions`.
 | The user asks the main agent "What number and code word did the side chat find?" | The note `[side-chat-bring-back]` showed after the user's message, with the question and `- Assistant: 391 ZEBRA`. The main agent answered "The number is 391 and the code word is ZEBRA." The footer status went away. |
 | The main agent runs `sleep 20`; the user presses `b` in the side chat. | "Available when the main thread is idle." Nothing was queued. |
 | The main agent is idle and the side chat is counting to 40; the user presses `b`. | "Available when the side chat is idle." |
+
+## L4: model and thinking level of each side chat
+
+Run on 2026-11-12 with `--no-extensions`. The main session used `google-sub/gemini-3.8-flash` at `low`; the global default model was `anthropic-sub/claude-opus-5-5` at `high`.
+
+| Scenario | Result |
+| --- | --- |
+| `/side` with no question, `Esc`, `m`, type `haiku-5-5` | The model list opened over the overlay and filtered to the two Claude Haiku 5.5 entries. |
+| `↓ Enter` | The title bar showed `anthropic-sub/claude-haiku-5-5 · low · ask`, with "Model: oncloud_ai/anthropic-sub/claude-haiku-5-5, thinking low, from the next run on." |
+| `t` three times | The level went `medium`, then `high`, then `xhigh`, each with a "Thinking: …" note. |
+| Ask "Which company made you?" | "Anthropic". |
+| `m` while that run ran | "Wait for this run to end, or press esc to stop it." No list opened. |
+| `m`, choose `google-sub/gemini-3.8-flash`, ask again | The title bar showed `google-sub/gemini-3.8-flash · high · ask`: `xhigh` became `high`, the nearest level that model supports. The answer was "Google". |
+| After all of it | The main footer still showed `google-sub/gemini-3.8-flash • low`, and `settings.json` still held `anthropic-sub/claude-opus-5-5` and `high`. |
+| A model without a key | `getAvailable()` lists only models with a key or a login, so the list cannot offer one. The refusal path is covered by `test/sideChat.test.ts`: the error names the model, and the old model and level stay. |
