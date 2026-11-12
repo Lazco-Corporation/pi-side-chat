@@ -1,6 +1,6 @@
 {
   "name": "@lazco/pi-side-chat",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Pi extension: /side and /btw open a side chat beside the main thread, with its own tools, model, and approvals",
   "type": "module",
   "license": "AGPL-3.0-or-later",
