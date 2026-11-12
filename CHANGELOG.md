@@ -3,6 +3,12 @@
 All notable changes to `@lazco/pi-side-chat` are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-11-12
+
+### Fixed
+
+- A side chat that failed to start, for example because its file could not be written, tries again with the next message instead of failing every message after it.
+
 ## [0.2.0] - 2026-11-12
 
 ### Added
@@ -25,5 +31,6 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - When a side chat changes files with `edit` or `write`, the main agent gets a note that names them.
 - The main agent's first `edit` or `write` of such a file is stopped until it reads the file again.
 
+[0.2.1]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Lazco-Corporation/pi-side-chat/releases/tag/v0.1.0
