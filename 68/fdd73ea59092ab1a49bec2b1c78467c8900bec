@@ -1,0 +1,32 @@
+.github/workflows/release-npm.yml
+  h_62d5984d259ab3 1-100
+.gitignore
+  h_62d5984d259ab3 1-3
+LICENSE
+  h_62d5984d259ab3 1-663
+bun.lock
+  h_62d5984d259ab3 1-275
+docs/verification.md
+  h_62d5984d259ab3 1-45
+package.json
+  h_62d5984d259ab3 1-57
+scripts/changelog-notes.sh
+  h_62d5984d259ab3 1-32
+scripts/release.sh
+  h_62d5984d259ab3 1-162
+spike/l0.ts
+  h_62d5984d259ab3 1-149
+tsconfig.json
+  h_62d5984d259ab3 1-18
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68fdd73ea59092ab1a49bec2b1c78467c8900bec",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
