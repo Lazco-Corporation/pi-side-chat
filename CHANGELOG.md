@@ -3,6 +3,17 @@
 All notable changes to `@lazco/pi-side-chat` are listed here.
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the versions follow [Semantic Versioning](https://semver.org/).
 
+## [0.2.0] - 2026-11-12
+
+### Added
+
+- `b` in a side chat brings it back: the main thread gets its questions and replies with the next message that you send there.
+- `m` chooses a model for the side chat from a list that you can filter, and `t` steps through its thinking levels, without changing the main session.
+- Several side chats can run at once. `/side` alone lists them, and `q` closes the overlay while a side chat keeps running.
+- A widget above the editor shows each side chat as running, waiting for approval, with a new reply, or idle, and the footer says when one waits for approval.
+- Side chats of a saved main session are saved too, and come back when the main session starts again.
+- Side chat files whose main session file is gone are deleted at session start.
+
 ## [0.1.0] - 2026-11-12
 
 ### Added
@@ -14,4 +25,5 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - When a side chat changes files with `edit` or `write`, the main agent gets a note that names them.
 - The main agent's first `edit` or `write` of such a file is stopped until it reads the file again.
 
+[0.2.0]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Lazco-Corporation/pi-side-chat/releases/tag/v0.1.0

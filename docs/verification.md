@@ -122,3 +122,15 @@ Run on 2026-11-12 with `--session-dir /tmp/sc-sessions`, so the main session was
 | `d`, Yes | The file and its folder were deleted. |
 | A new side chat with a message; `/quit`; the main session file moved to the trash; the side chat file's time set two hours back; a new pi session started | The side chat file and its folder were deleted at session start. |
 | A side chat file whose main session file is missing but that is younger than one hour | Kept. Covered by `test/store.test.ts`, since pi writes a new main session file only after its first reply. |
+
+## Final run with every installed extension
+
+Run on 2026-11-12 in fullscreen mode, with every installed extension loaded and `--session-dir` set, after L6.
+
+| Scenario | Result |
+| --- | --- |
+| `/side Use bash to run: echo full-env-check.` | The first-run approval showed `bash echo full-env-check`; after `y`, the side chat reported `full-env-check`. |
+| `b`, `m`, `Esc`, `q` | "Brought back…" showed, the model list opened and closed, and the widget listed the side chat as `idle`. One side chat file existed. |
+| The user asks the main agent what the side chat output | The Bring back note went with the message, and the main agent answered "The side chat output was full-env-check." |
+
+The custom footer of pi-statusline in this setup does not draw extension statuses, so `Bring back waits: …` did not show there; the default footer shows it, as in the L3 run.
