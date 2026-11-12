@@ -1,0 +1,19 @@
+src/sideChat.ts
+  s_b55b1a83215fda::t_9470eb6bdef15a 301-305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a52fbd9821735724bee7bd93b3b35aea2d41418",
+  "prompts": {},
+  "sessions": {
+    "s_b55b1a83215fda": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1cf1d-1e32-74bd-9175-5e7e8d55331c",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
