@@ -298,7 +298,11 @@ export class SideChat {
   }
 
   private ensureSession(): Promise<AgentSession> {
-    this.sessionStart ??= this.startSession();
+    // A failed start is tried again with the next message, instead of failing every message after it.
+    this.sessionStart ??= this.startSession().catch((error: unknown) => {
+      this.sessionStart = undefined;
+      throw error;
+    });
     return this.sessionStart;
   }
 

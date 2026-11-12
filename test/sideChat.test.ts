@@ -51,3 +51,40 @@ test("a draft side chat has no messages, and asks in its mode until switched", (
   sideChat.togglePermissionMode();
   assert.equal(sideChat.mode, "auto");
 });
+
+test("a side chat that failed to start tries again with the next message", async () => {
+  const failures = ["first failure", "second failure"];
+  const sideChat = new SideChat({
+    fork: { leafId: null, inherited: [] },
+    main: {
+      cwd: "/work",
+      sessionFile: undefined,
+      modelRegistry: { hasConfiguredAuth: () => true } as unknown as ModelRegistry,
+      branch: () => [],
+      isIdle: () => true,
+      systemPrompt: () => {
+        throw new Error(failures.shift() ?? "no more failures");
+      },
+    },
+    model: model("start", true),
+    thinkingLevel: "low",
+    hooks: { fileChanged: () => {}, runChangedFiles: () => {} },
+  });
+  const settled = () =>
+    new Promise<void>((resolve) => {
+      const stop = sideChat.onChange(() => {
+        if (!sideChat.busy) {
+          stop();
+          resolve();
+        }
+      });
+    });
+  let done = settled();
+  assert.equal(await sideChat.send("one"), "sent");
+  await done;
+  assert.equal(sideChat.error, "first failure");
+  done = settled();
+  assert.equal(await sideChat.send("two"), "sent");
+  await done;
+  assert.equal(sideChat.error, "second failure");
+});
