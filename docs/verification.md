@@ -59,3 +59,14 @@ Run on 2026-11-12 with `src/index.ts`, in regular mode and in fullscreen mode.
 | The main agent runs `sleep 30 && echo main-done`; `/side What is the main thread doing right now?` | The side chat answered `sleep 30 && echo main-done` from the activity digest. The main run went on and ended with `DONE`. |
 | Fullscreen mode, during the first run of a new session (no settled leaf); `/side 主 thread 現在在跑什麼指令？` | The side chat answered in Chinese with `sleep 25 && echo first-done`, from a digest of the whole branch. |
 | Chinese in the overlay input | `中文輸入測試` rendered after `› `, and the hardware cursor sat right after it (column 32 for a frame at column 16). |
+
+## L2: the main thread and the side chat know about each other
+
+Run on 2026-11-12 with every installed extension loaded (`pi-bolt -e src/index.ts`, without `--no-extensions`), so the main session's `edit` and `write` were Pi-Bolt's pix-edit and pix-write.
+
+| Scenario | Result |
+| --- | --- |
+| The main agent writes `notes.txt` with `line one`. A side chat edits it to `line one, side change` (approved with `y`). The main agent is idle. | No main run started. The file held the side chat's text. |
+| The user then asks the main agent to overwrite `notes.txt` without reading it. | The change note showed in the chat right after the user's message: `Side chat "…" changed files in the working directory: notes.txt.` The main `write` was stopped with `notes.txt was changed by side chat "…". Read it again before you change it.`, and the file kept the side chat's text. |
+| The user asks the main agent to write the file again. | The agent read the file and wrote `main version`. The stop happened once. |
+| The main agent runs `sleep 35`. A side chat calls `main_thread_read`, then writes `side.txt` (approved with `y`). | `main_thread_read` needed no approval, and the side chat answered "The main thread is running now. It runs the command sleep 35." The change note reached the main run before its next model call, and the main agent answered "Side chat … changed side.txt." |

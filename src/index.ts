@@ -14,6 +14,10 @@ export default function (pi: ExtensionAPI): void {
   pi.on("session_start", (_event, ctx) => registry.onSessionStart(ctx));
   pi.on("agent_settled", (_event, ctx) => registry.onMainSettled(ctx));
   pi.on("session_shutdown", () => registry.onSessionShutdown());
+  pi.on("tool_call", (event, ctx) => registry.onMainToolCall(event, ctx));
+  pi.on("tool_result", (event, ctx) => {
+    registry.onMainToolResult(event, ctx);
+  });
 
   for (const name of ["side", "btw"]) {
     pi.registerCommand(name, {

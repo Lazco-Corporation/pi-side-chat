@@ -6,12 +6,13 @@ import {
   type ModelRegistry,
   type SessionEntry,
   SessionManager,
-  type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { DENIED_REASON, describeToolCall, needsApproval, nextPermissionMode, type PermissionMode } from "./approval.ts";
+import { CHANGE_TOOL_NAMES, resolveToolPath } from "./changes.ts";
 import { createChildSession, type ThinkingLevel } from "./child.ts";
 import { buildSideChatContext } from "./context.ts";
 import { activitySince, type ForkPoint } from "./fork.ts";
+import { createMainThreadReadTool } from "./mainThreadRead.ts";
 import { streamingText, type TranscriptItem, transcriptFromEntries } from "./transcript.ts";
 
 /**
@@ -45,12 +46,21 @@ export interface PendingApproval {
   resolve: (approved: boolean) => void;
 }
 
+/** What the extension learns from a side chat as it runs. */
+export interface SideChatHooks {
+  /** A side chat `edit` or `write` succeeded. */
+  fileChanged(sideChat: SideChat, absolutePath: string): void;
+  /** A run ended that changed these files. */
+  runChangedFiles(sideChat: SideChat, absolutePaths: string[]): void;
+}
+
 export interface SideChatOptions {
   id?: string;
   fork: ForkPoint;
   main: MainThread;
   model: Model<Api> | undefined;
   thinkingLevel: ThinkingLevel | undefined;
+  hooks: SideChatHooks;
 }
 
 export type SendResult = "sent" | "queued" | "busy" | "empty";
@@ -71,6 +81,9 @@ export class SideChat {
   readonly approvals: PendingApproval[] = [];
   private readonly fork: ForkPoint;
   private readonly main: MainThread;
+  private readonly hooks: SideChatHooks;
+  /** Files that the current run changed, in the order of their first change. */
+  private readonly runChanges = new Set<string>();
   private draftModel: Model<Api> | undefined;
   private draftThinkingLevel: ThinkingLevel | undefined;
   private session: AgentSession | undefined;
@@ -91,6 +104,7 @@ export class SideChat {
     this.id = options.id ?? randomUUID();
     this.fork = options.fork;
     this.main = options.main;
+    this.hooks = options.hooks;
     this.draftModel = options.model;
     this.draftThinkingLevel = options.thinkingLevel;
   }
@@ -243,7 +257,12 @@ export class SideChat {
       thinkingLevel: this.draftThinkingLevel,
       modelRegistry: this.main.modelRegistry,
       gate: this.gate,
-      customTools: this.customTools(),
+      customTools: [
+        createMainThreadReadTool(() => ({
+          running: !this.main.isIdle(),
+          activity: activitySince(this.main.branch(), this.fork.leafId),
+        })),
+      ],
     });
     if (this.disposed) {
       session.dispose();
@@ -278,11 +297,12 @@ export class SideChat {
     this.contextRun = false;
     this.streamingMessage = undefined;
     this.denyAll();
+    if (this.runChanges.size > 0) {
+      const paths = [...this.runChanges];
+      this.runChanges.clear();
+      this.hooks.runChangedFiles(this, paths);
+    }
     this.changed();
-  }
-
-  protected customTools(): ToolDefinition[] {
-    return [];
   }
 
   /** The side chat's own extension: it holds every change for the user's answer when the mode asks for it. */
@@ -291,6 +311,14 @@ export class SideChat {
       if (!needsApproval(event.toolName, this.mode, this.contextRun)) return undefined;
       const approved = await this.requestApproval(event.toolName, event.input);
       return approved ? undefined : { block: true, reason: DENIED_REASON };
+    });
+    childPi.on("tool_result", async (event) => {
+      if (event.isError || !CHANGE_TOOL_NAMES.has(event.toolName)) return undefined;
+      const path = resolveToolPath(this.main.cwd, event.input);
+      if (path === undefined) return undefined;
+      this.runChanges.add(path);
+      this.hooks.fileChanged(this, path);
+      return undefined;
     });
   };
 

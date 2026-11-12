@@ -1,34 +1,72 @@
-import type { ExtensionAPI, ExtensionCommandContext, ExtensionContext } from "@earendil-works/pi-coding-agent";
+import type {
+  ExtensionAPI,
+  ExtensionCommandContext,
+  ExtensionContext,
+  ToolCallEvent,
+  ToolCallEventResult,
+  ToolResultEvent,
+} from "@earendil-works/pi-coding-agent";
+import {
+  CHANGE_TOOL_NAMES,
+  CHANGES_MESSAGE_TYPE,
+  ChangeTracker,
+  changeNotification,
+  displayPath,
+  resolveToolPath,
+  staleFileReason,
+} from "./changes.ts";
 import { chooseForkPoint } from "./fork.ts";
 import { SideChatOverlay } from "./overlay.ts";
-import { type MainThread, SideChat } from "./sideChat.ts";
+import { type MainThread, SideChat, type SideChatHooks } from "./sideChat.ts";
 
 /**
- * The side chats of the main session, and the commands that open them.
+ * The side chats of the main session, the commands that open them, and what the main agent
+ * learns from them.
  *
  * It follows the main session: the leaf of the last settled run is where a new side chat forks
  * while the main agent runs, and a session switch or reload ends every side chat.
  */
 export class SideChatRegistry {
   private readonly sideChats: SideChat[] = [];
+  private readonly changes = new ChangeTracker();
   private stableLeafId: string | null = null;
+  private mainContext: ExtensionContext | undefined;
 
   constructor(private readonly pi: ExtensionAPI) {}
 
   /** The main session started, or the extension runtime was replaced. Its leaf is settled now. */
   onSessionStart(ctx: ExtensionContext): void {
+    this.mainContext = ctx;
     this.stableLeafId = ctx.sessionManager.getLeafId();
   }
 
   onMainSettled(ctx: ExtensionContext): void {
+    this.mainContext = ctx;
     this.stableLeafId = ctx.sessionManager.getLeafId();
   }
 
   onSessionShutdown(): void {
     for (const sideChat of this.sideChats.splice(0)) sideChat.dispose();
+    this.mainContext = undefined;
+  }
+
+  /** Stops the main agent's first `edit` or `write` of a file that a side chat changed since the agent read it. */
+  onMainToolCall(event: ToolCallEvent, ctx: ExtensionContext): ToolCallEventResult | undefined {
+    if (!CHANGE_TOOL_NAMES.has(event.toolName) || this.changes.size === 0) return undefined;
+    const path = resolveToolPath(ctx.cwd, event.input);
+    const source = path === undefined ? undefined : this.changes.take(path);
+    if (path === undefined || source === undefined) return undefined;
+    return { block: true, reason: staleFileReason(displayPath(ctx.cwd, path), source) };
+  }
+
+  onMainToolResult(event: ToolResultEvent, ctx: ExtensionContext): void {
+    if (event.toolName !== "read" || event.isError || this.changes.size === 0) return;
+    const path = resolveToolPath(ctx.cwd, event.input);
+    if (path !== undefined) this.changes.clear(path);
   }
 
   async runCommand(args: string, ctx: ExtensionCommandContext): Promise<void> {
+    this.mainContext = ctx;
     if (ctx.mode !== "tui") {
       if (ctx.hasUI) ctx.ui.notify("Side chats need the interactive terminal.", "warning");
       return;
@@ -45,6 +83,27 @@ export class SideChatRegistry {
     await this.openOverlay(sideChat, ctx, question.length === 0 && !sideChat.hasMessages);
   }
 
+  private readonly hooks: SideChatHooks = {
+    fileChanged: (sideChat, absolutePath) => {
+      this.changes.record(absolutePath, { sideChatId: sideChat.id, title: sideChat.title });
+    },
+    runChangedFiles: (sideChat, absolutePaths) => {
+      const ctx = this.mainContext;
+      if (!ctx) return;
+      const paths = absolutePaths.map((path) => displayPath(ctx.cwd, path));
+      // A running main agent reads it before its next model call; an idle one gets it with the next message.
+      void this.pi.sendMessage(
+        {
+          customType: CHANGES_MESSAGE_TYPE,
+          content: changeNotification(sideChat.title, paths),
+          display: true,
+          details: { sideChatId: sideChat.id, paths },
+        },
+        { deliverAs: ctx.isIdle() ? "nextTurn" : "steer" },
+      );
+    },
+  };
+
   private createSideChat(ctx: ExtensionCommandContext): SideChat {
     const main: MainThread = {
       cwd: ctx.cwd,
@@ -58,6 +117,7 @@ export class SideChatRegistry {
       main,
       model: ctx.model,
       thinkingLevel: this.pi.getThinkingLevel(),
+      hooks: this.hooks,
     });
   }
 
@@ -96,6 +156,7 @@ export class SideChatRegistry {
   private remove(sideChat: SideChat): void {
     const index = this.sideChats.indexOf(sideChat);
     if (index >= 0) this.sideChats.splice(index, 1);
+    this.changes.forgetSideChat(sideChat.id);
     sideChat.dispose();
   }
 }
