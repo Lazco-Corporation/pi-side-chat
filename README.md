@@ -1,19 +1,27 @@
+<div align="center">
+
 # pi-side-chat
 
-Pi extension: `/side` and `/btw` open a side chat beside the main thread.
-Ask a question without adding to the thread, while the main agent keeps working.
+Pi extension: `/side` and `/btw` open a side chat beside the main thread, with its own tools, model, and approvals.
 
-[Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [Bring back](#bring-back) · [The main agent and side chat changes](#the-main-agent-and-side-chat-changes) · [What the side chat reads](#what-the-side-chat-reads) · [Limitations](#limitations)
+[![npm](https://img.shields.io/npm/v/@lazco/pi-side-chat)](https://www.npmjs.com/package/@lazco/pi-side-chat) [![License](https://img.shields.io/npm/l/@lazco/pi-side-chat)](LICENSE)
+
+[Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [Bring back](#bring-back) · [Limitations](#limitations)
+
+</div>
+
+Ask a question while the main agent works, and keep the question out of the main thread.
+A side chat is an agent session of its own.
+It starts from what the main thread knows, and it can read and change files in the same directory.
 
 ## Highlights
 
-- **The main agent keeps working.** A side chat runs as its own agent session, so it never interrupts the main run.
-- **It knows what the thread knows.** It starts from the main conversation, plus a digest of what the main agent did since its last settled point.
-- **Real tools.** The side chat can `read`, `grep`, `find`, `ls`, run `bash`, `edit`, and `write` in the same working directory.
-- **Its own model.** Each side chat can switch its model and thinking level without touching the main session.
-- **Changes ask first.** The first run of a side chat asks before every `bash`, `edit`, and `write`. After that, its mode decides.
-- **Bring back what you learned.** One key puts the side chat into the main thread's next message.
-- **The main agent is not blindsided.** It learns which files a side chat changed, and its first write to such a file is stopped until it reads the file again.
+- **The main agent keeps working.** A side chat runs as a separate agent session, so it does not interrupt the main run.
+- **It starts from the main thread.** It gets the main conversation, plus a digest of up to 8000 characters of what the main agent did since its last finished run. See [what the side chat reads](docs/how-it-works.md#what-the-side-chat-reads).
+- **Changes ask first.** The side chat has `read`, `grep`, `find`, `ls`, `bash`, `edit`, and `write`. Its first run asks before each `bash`, `edit`, and `write`. See [Approvals](#approvals).
+- **One key to bring back.** Press `b`, and the side chat goes into the next main message, at most 20000 characters. See [Bring back](#bring-back).
+- **The main agent learns what changed.** It gets the names of the files that a side chat changed, and its first write to such a file is stopped. See [Side chat changes](#side-chat-changes).
+- **Several side chats, each with its own model.** They run side by side, and they are saved with the main session. See [Several side chats](#several-side-chats).
 
 ## Installation
 
@@ -24,38 +32,29 @@ pi install npm:@lazco/pi-side-chat
 ```
 
 Then run `/reload` in pi.
+To check the install, run `pi list`.
+The list of user packages shows `npm:@lazco/pi-side-chat`.
 
 ## Usage
 
 | Command | What it does |
 | --- | --- |
 | `/side <question>` | Starts a new side chat and asks the question. |
-| `/btw <question>` | The same as `/side`. |
-| `/side` | Lists the side chats to open one, or starts a new empty side chat. |
+| `/btw <question>` | The same as `/side <question>`. |
+| `/side` | Lists the side chats, so that you can open one, or start a new empty side chat. |
 
-The side chat opens in an overlay over the chat.
-Its title is the first line of your first question.
+For example, while the main agent runs, type:
+
+```text
+/btw which function in this repo reads the config file?
+```
+
+An overlay opens over the chat, and the side chat answers there.
+The title of the overlay is the first line of your first question.
 The top right corner shows the model, the thinking level, and the permission mode.
+The main agent continues, and your question does not go into the main session.
 
 A side chat that never got a message goes away when you close it.
-A session switch, `/reload`, or quitting pi stops the side chats that run. They are saved, so they come back with their main session; see [Saved side chats](#saved-side-chats).
-
-### Several side chats
-
-Each `/side <question>` starts a new side chat, and they run side by side.
-`/side` alone lists them, with **New side chat** on top, so you can open one again.
-
-Press `q` to close the overlay and leave the side chat running.
-While side chats exist, a widget above the editor lists each of them with its state:
-
-| State | Meaning |
-| --- | --- |
-| `running` | The side chat works on your message. |
-| `waits for approval` | A call waits for `y` or `n`. The footer of pi also says so. |
-| `new reply` | A run ended while its overlay was closed. |
-| `idle` | Nothing new since you looked. |
-
-Press `d` in a side chat to delete it, after a confirmation.
 
 ### Keys
 
@@ -66,8 +65,8 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 | `Tab` or `Enter` | Open the input line |
 | `y` / `n` | Approve or deny the call that waits |
 | `b` | Bring the side chat back to the main thread |
-| `p` | Switch between `ask` and `auto` |
-| `m` | Choose the side chat's model |
+| `p` | Switch the permission mode between `ask` and `auto` |
+| `m` | Choose the model of the side chat |
 | `t` | Step to the next thinking level |
 | `c` | Copy the newest reply as Markdown |
 | `d` | Delete the side chat, after a confirmation |
@@ -76,113 +75,91 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 | `Home` `End` `g` `G` | Go to the top or the bottom |
 | Mouse drag | Select text and copy it, in fullscreen mode |
 | `Esc` | Stop the run, or close the overlay when nothing runs |
-| `q` | Close the overlay, and leave a run going in the background |
+| `q` | Close the overlay, and let the run continue in the background |
 
-In the input line, `Enter` sends and `Esc` goes back to the keys, with your text kept.
-A message that you send while the side chat runs waits for the run to end.
+In the input line, `Enter` sends the message, and `Esc` goes back to the keys with your text kept.
+A message that you send while the side chat runs waits until the run ends.
+
+## Several side chats
+
+Each `/side <question>` starts a new side chat, and the side chats run side by side.
+`/side` alone lists them, with **New side chat** at the top.
+
+While side chats exist, a widget above the editor lists each side chat with its state:
+
+| State | Meaning |
+| --- | --- |
+| `running` | The side chat works on your message. |
+| `waits for approval` | A call waits for `y` or `n`. The footer of pi also shows this. |
+| `new reply` | A run ended while its overlay was closed. |
+| `idle` | Nothing is new since you last looked. |
+
+A session switch, `/reload`, or quitting pi stops the side chats that run.
+When the main session is saved, its side chats are saved too, and they come back when the main session starts again, for example after `/resume`.
+See [saved side chats](docs/how-it-works.md#saved-side-chats) for the files and the cleanup.
 
 ## Model and thinking level
 
-A new side chat uses the main session's model and thinking level at the time you open it.
-Later changes in the main session do not reach a side chat that is already open.
+A new side chat uses the model and the thinking level of the main session at the time you open it.
 
-Press `m` to choose another model for this side chat.
-The list holds the models that have a key or a login, with the current one marked.
-Type to filter it, then press `Enter` to choose or `Esc` to cancel.
-The thinking level stays, or becomes the nearest level that the new model supports.
-Press `t` to step through the thinking levels that the model supports.
+- Press `m` to choose another model. The list holds the models that have a key or a login. Type to filter the list, then press `Enter`.
+- Press `t` to step through the thinking levels that the model supports.
 
-Both keys change only this side chat, from its next run on.
-The main session and your default model stay as they are.
+Both keys change only this side chat, from its next run.
+The main session and your default model do not change.
 While the side chat runs, both keys wait: let the run end, or press `Esc` to stop it.
 
-To ask a cheap model from the first question, open an empty side chat with `/side`, press `Esc`, press `m`, and then ask.
+To ask a cheaper model from the first question, type `/side` and open a new empty side chat.
+Then press `Esc`, press `m`, choose the model, and ask.
 
 ## Approvals
 
-The side chat works in the same directory as the main thread, so the calls that can change it wait for you: `bash`, `edit`, and `write`.
+The side chat works in the same directory as the main thread.
+So the calls that can change files wait for you: `bash`, `edit`, and `write`.
 Reading tools never wait.
 
-- **The first run** of a side chat asks before every such call, whatever the mode, because you have not seen what the side chat does yet.
-- **After that**, the mode decides. `ask`, the default, asks every time. `auto` lets the calls run. Press `p` to switch.
+| Run | `ask` mode (default) | `auto` mode |
+| --- | --- | --- |
+| First run of a side chat | Asks before each call | Asks before each call |
+| Later runs | Asks before each call | Runs each call |
+
+The first run always asks, because you have not seen what the side chat does yet.
+Press `p` to switch the mode.
 
 A waiting call shows its command or its file above the input line.
 Press `y` to let it run, or `n` to deny it.
-A denied call reaches the model as "The user denied this call."
-Stopping the run denies every call that waits.
+The model gets "The user denied this call." for a denied call.
+When you stop the run, every call that waits is denied.
 
 ## Bring back
 
 Press `b` to give the main thread what the side chat found.
 Nothing goes to the main agent at once.
-The side chat waits, and the footer of pi shows `Bring back waits: <title>`.
-It goes with the next message that you send in the main thread, so you decide what the main agent does with it.
-The note shows in the chat after your message.
+The note goes with the next message that you send in the main thread, so you decide what the main agent does with it.
 
-The note holds your questions and the side chat's replies, each cut to 4000 characters, and one line for each command and changed file.
-It is at most 20000 characters, and keeps the newest part.
-It leaves out the conversation that the side chat inherited from the main thread.
+The note holds your questions, the side chat's replies, and one line for each command and changed file.
+It is at most 20000 characters.
+Bring back is available only when both the main agent and the side chat are idle.
+See [Bring back](docs/how-it-works.md#bring-back) for the limits and the other conditions.
 
-Bring back is available when:
-
-- the main agent is idle and has no queued message,
-- the side chat is idle, and its newest reply ended normally,
-- no other side chat waits to go back.
-
-When it is not available, the overlay says why.
-Press `b` again in the same side chat to replace the note with the newest state.
-
-## The main agent and side chat changes
+## Side chat changes
 
 A side chat does not tell the main agent what you asked.
-It does tell it which files it changed, so the main agent does not work from an old copy.
-Only `edit` and `write` are tracked, because their arguments name the file.
+It tells the main agent which files it changed with `edit` or `write`, so that the main agent does not work from an old copy.
 
-- **A change note.** When a side chat run ends and it changed files, the main agent gets a note that names the side chat and the files. A running main agent reads it before its next model call. An idle one gets it with your next message, so the note never starts a run. The note shows in the chat too.
-- **A stop on stale writes.** The main agent's first `edit` or `write` of a file that a side chat changed is stopped, with the reason that the file changed and must be read again. A `read` of the file, or that one stop, clears it.
+- **A change note.** When a side chat run ends, the main agent gets a note with the changed files. An idle main agent gets the note with your next message, so the note never starts a run.
+- **A stop on stale writes.** The main agent's first `edit` or `write` of such a file is stopped, with the reason that it must read the file again.
 
-## What the side chat reads
-
-The side chat starts from the main conversation, up to a settled point.
-
-- While the main agent is idle, it gets the whole branch.
-- While the main agent runs, it gets the branch up to the end of the last finished run. The entries of the run in progress can still change, so they are not copied.
-- During the first run of a session, it gets no conversation.
-
-With the first question, the side chat also gets a note that says it is a side chat, that the main thread may still run in the same directory, and which tools it has.
-The note holds a digest of what the main thread did after the settled point: your messages, the agent's replies, its commands, and the files it changed.
-The note is at most 8000 characters, and keeps the newest lines.
-
-The `main_thread_read` tool reads the same digest again at any time, with the main agent's current state, so the side chat can follow a long main run.
-
-The side chat uses the main session's system prompt, and starts with its model and thinking level.
-It loads no extensions, skills, or context files of its own, so it has only the tools listed above.
-
-## Saved side chats
-
-When the main session is saved, each side chat is saved as a pi session file of its own:
-
-```
-~/.pi/agent/side-chats/<main session id>/<side chat id>.jsonl
-```
-
-The file is written when the first message goes out, so a side chat that never got one leaves no file.
-It starts with a copy of what the side chat inherited from the main thread, so it opens without the main session file, and its header names the main session file.
-
-- **Coming back.** When the main session starts again, for example after `/resume` or `pi -c`, its side chats are listed again, with their model and thinking level. Open one with `/side` and go on. A run that was going when pi stopped does not go on by itself.
-- **Deleting.** `d` and Yes delete the file, and the folder when it was the last one.
-- **Cleanup.** At each session start, side chat files whose main session file is gone are deleted, with the folders that end up empty. Pi writes a new main session file only after the first reply, so a file must be older than one hour to go.
-
-With `--no-session`, side chats stay in memory and end with the session.
+See [Side chat changes](docs/how-it-works.md#side-chat-changes) for the details.
 
 ## Limitations
 
-- **Interactive mode only.** In RPC, JSON, and print mode, the commands only warn.
-- **Each first question costs a full read.** The side chat has other tools than the main session, so the provider cannot reuse the main session's prompt cache. The first run reads the whole conversation at full price.
-- **`bash` changes are not tracked.** A side chat that changes files with `npm install`, `sed -i`, or `git checkout` sends no note, and the main agent is not stopped.
-- **A small model can misread the main thread.** In tests of pi-recap, small models sometimes reported a finished step as open. A side chat on a cheap model can describe the state of the main thread wrongly.
-- **A copy per side chat.** Each saved side chat holds its own copy of the main conversation up to its starting point, as `/fork` does.
-- **No extension tools.** The side chat has no MCP tools, no web search, and no other extension tools.
+- **Interactive mode only.** In RPC, JSON, and print mode, the commands only show a warning.
+- **Each first question costs a full read.** The side chat has other tools than the main session, so the provider cannot reuse the prompt cache of the main session. The first run reads the whole conversation at full price.
+- **`bash` changes are not tracked.** When a side chat changes files with `npm install`, `sed -i`, or `git checkout`, the main agent gets no note and no stop.
+- **A small model can misread the main thread.** In tests of [pi-recap](https://github.com/Lazco-Corporation/pi-recap), small models sometimes reported a finished step as open. A side chat on a cheap model can describe the state of the main thread wrongly.
+- **A copy per side chat.** Each saved side chat holds its own copy of the main conversation up to its start point, as `/fork` does.
+- **No extension tools.** The side chat has no MCP tools, no web search, and no tools from other extensions.
 
 ## Contributing
 
