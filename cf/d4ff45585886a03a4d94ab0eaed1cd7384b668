@@ -1,0 +1,21 @@
+src/index.ts
+  s_ca649ffe1d1c2b::t_17c68ea8d7b568 1-26
+src/registry.ts
+  s_ca649ffe1d1c2b::t_49eb03c5a54114 1-101
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cfd4ff45585886a03a4d94ab0eaed1cd7384b668",
+  "prompts": {},
+  "sessions": {
+    "s_ca649ffe1d1c2b": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a1cf03-d4d1-766c-8d3c-521b0afd62c3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
