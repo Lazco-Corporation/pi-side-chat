@@ -3,7 +3,7 @@
 Pi extension: `/side` and `/btw` open a side chat beside the main thread.
 Ask a question without adding to the thread, while the main agent keeps working.
 
-[Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [The main agent and side chat changes](#the-main-agent-and-side-chat-changes) · [What the side chat reads](#what-the-side-chat-reads) · [Limitations](#limitations)
+[Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [Bring back](#bring-back) · [The main agent and side chat changes](#the-main-agent-and-side-chat-changes) · [What the side chat reads](#what-the-side-chat-reads) · [Limitations](#limitations)
 
 ## Highlights
 
@@ -11,6 +11,7 @@ Ask a question without adding to the thread, while the main agent keeps working.
 - **It knows what the thread knows.** It starts from the main conversation, plus a digest of what the main agent did since its last settled point.
 - **Real tools.** The side chat can `read`, `grep`, `find`, `ls`, run `bash`, `edit`, and `write` in the same working directory.
 - **Changes ask first.** The first run of a side chat asks before every `bash`, `edit`, and `write`. After that, its mode decides.
+- **Bring back what you learned.** One key puts the side chat into the main thread's next message.
 - **The main agent is not blindsided.** It learns which files a side chat changed, and its first write to such a file is stopped until it reads the file again.
 
 ## Installation
@@ -49,6 +50,7 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 | --- | --- |
 | `Tab` or `Enter` | Open the input line |
 | `y` / `n` | Approve or deny the call that waits |
+| `b` | Bring the side chat back to the main thread |
 | `p` | Switch between `ask` and `auto` |
 | `c` | Copy the newest reply as Markdown |
 | `d` | Delete the side chat, after a confirmation |
@@ -74,6 +76,27 @@ A waiting call shows its command or its file above the input line.
 Press `y` to let it run, or `n` to deny it.
 A denied call reaches the model as "The user denied this call."
 Stopping the run denies every call that waits.
+
+## Bring back
+
+Press `b` to give the main thread what the side chat found.
+Nothing goes to the main agent at once.
+The side chat waits, and the footer of pi shows `Bring back waits: <title>`.
+It goes with the next message that you send in the main thread, so you decide what the main agent does with it.
+The note shows in the chat after your message.
+
+The note holds your questions and the side chat's replies, each cut to 4000 characters, and one line for each command and changed file.
+It is at most 20000 characters, and keeps the newest part.
+It leaves out the conversation that the side chat inherited from the main thread.
+
+Bring back is available when:
+
+- the main agent is idle and has no queued message,
+- the side chat is idle, and its newest reply ended normally,
+- no other side chat waits to go back.
+
+When it is not available, the overlay says why.
+Press `b` again in the same side chat to replace the note with the newest state.
 
 ## The main agent and side chat changes
 

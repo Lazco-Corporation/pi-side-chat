@@ -39,10 +39,18 @@ const BODY_TOP_ROW = 2;
 const BODY_LEFT_COLUMN = 2;
 const APPROVAL_SUMMARY_MAX_ROWS = 3;
 
+/** A short message in the footer. */
+export interface OverlayNotice {
+  text: string;
+  tone: "success" | "error" | "warning";
+}
+
 /** What the overlay asks the extension to do. Each key action that leaves the side chat goes through here. */
 export interface SideChatOverlayActions {
   close: () => void;
   delete: () => void;
+  /** Queues the side chat for the main thread's next message, or says why not. */
+  bringBack: () => OverlayNotice;
 }
 
 export interface SideChatOverlayOptions {
@@ -160,6 +168,9 @@ export class SideChatOverlay implements Component, Focusable {
       );
     } else if (data === "d") {
       this.actions.delete();
+    } else if (data === "b") {
+      const notice = this.actions.bringBack();
+      this.showNotice(notice.text, notice.tone);
     } else if (data === "c") {
       const text = lastAssistantText(this.sideChat.transcript());
       if (text !== undefined) void this.copy(text);
@@ -417,9 +428,11 @@ export class SideChatOverlay implements Component, Focusable {
     const mode = hint("p", this.sideChat.mode === "ask" ? "auto mode" : "ask mode");
     const copy = lastAssistantText(this.sideChat.transcript()) !== undefined ? [hint("c", "copy")] : [];
     const remove = hint("d", "delete");
+    const bringBack = this.sideChat.busy || copy.length === 0 ? [] : [hint("b", "bring back")];
     const candidates = [
-      [...approve, ask, mode, ...copy, remove, close],
-      [...approve, ask, mode, remove, close],
+      [...approve, ask, ...bringBack, mode, ...copy, remove, close],
+      [...approve, ask, ...bringBack, mode, remove, close],
+      [...approve, ask, ...bringBack, close],
       [...approve, ask, close],
       [...approve, close],
     ];

@@ -70,3 +70,14 @@ Run on 2026-11-12 with every installed extension loaded (`pi-bolt -e src/index.t
 | The user then asks the main agent to overwrite `notes.txt` without reading it. | The change note showed in the chat right after the user's message: `Side chat "…" changed files in the working directory: notes.txt.` The main `write` was stopped with `notes.txt was changed by side chat "…". Read it again before you change it.`, and the file kept the side chat's text. |
 | The user asks the main agent to write the file again. | The agent read the file and wrote `main version`. The stop happened once. |
 | The main agent runs `sleep 35`. A side chat calls `main_thread_read`, then writes `side.txt` (approved with `y`). | `main_thread_read` needed no approval, and the side chat answered "The main thread is running now. It runs the command sleep 35." The change note reached the main run before its next model call, and the main agent answered "Side chat … changed side.txt." |
+
+## L3: Bring back
+
+Run on 2026-11-12 with `--no-extensions`.
+
+| Scenario | Result |
+| --- | --- |
+| The main thread is idle. The side chat answers "391 ZEBRA". The user presses `b`. | The overlay said "Brought back. The main thread gets this side chat with your next message there.", and the footer of pi showed `Bring back waits: Compute 17*23…`. Closing the overlay started no main run. |
+| The user asks the main agent "What number and code word did the side chat find?" | The note `[side-chat-bring-back]` showed after the user's message, with the question and `- Assistant: 391 ZEBRA`. The main agent answered "The number is 391 and the code word is ZEBRA." The footer status went away. |
+| The main agent runs `sleep 20`; the user presses `b` in the side chat. | "Available when the main thread is idle." Nothing was queued. |
+| The main agent is idle and the side chat is counting to 40; the user presses `b`. | "Available when the side chat is idle." |

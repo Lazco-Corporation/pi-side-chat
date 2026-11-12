@@ -1,4 +1,6 @@
 import type {
+  BeforeAgentStartEvent,
+  BeforeAgentStartEventResult,
   ExtensionAPI,
   ExtensionCommandContext,
   ExtensionContext,
@@ -6,6 +8,13 @@ import type {
   ToolCallEventResult,
   ToolResultEvent,
 } from "@earendil-works/pi-coding-agent";
+import {
+  BRING_BACK_MESSAGE_TYPE,
+  bringBackBlockedReason,
+  hasFinishedReply,
+  type PendingBringBack,
+  renderBringBack,
+} from "./bringBack.ts";
 import {
   CHANGE_TOOL_NAMES,
   CHANGES_MESSAGE_TYPE,
@@ -16,8 +25,10 @@ import {
   staleFileReason,
 } from "./changes.ts";
 import { chooseForkPoint } from "./fork.ts";
-import { SideChatOverlay } from "./overlay.ts";
+import { type OverlayNotice, SideChatOverlay } from "./overlay.ts";
 import { type MainThread, SideChat, type SideChatHooks } from "./sideChat.ts";
+
+const BRING_BACK_STATUS_KEY = "side-chat-bring-back";
 
 /**
  * The side chats of the main session, the commands that open them, and what the main agent
@@ -31,6 +42,7 @@ export class SideChatRegistry {
   private readonly changes = new ChangeTracker();
   private stableLeafId: string | null = null;
   private mainContext: ExtensionContext | undefined;
+  private pendingBringBack: PendingBringBack | undefined;
 
   constructor(private readonly pi: ExtensionAPI) {}
 
@@ -48,6 +60,39 @@ export class SideChatRegistry {
   onSessionShutdown(): void {
     for (const sideChat of this.sideChats.splice(0)) sideChat.dispose();
     this.mainContext = undefined;
+    this.pendingBringBack = undefined;
+  }
+
+  /** A side chat that the user brought back goes with the next message that the user sends. */
+  onBeforeAgentStart(event: BeforeAgentStartEvent, ctx: ExtensionContext): BeforeAgentStartEventResult | undefined {
+    const pending = this.pendingBringBack;
+    if (event.messageType !== "user" || pending === undefined) return undefined;
+    this.pendingBringBack = undefined;
+    if (ctx.hasUI) ctx.ui.setStatus(BRING_BACK_STATUS_KEY, undefined);
+    return {
+      message: {
+        customType: BRING_BACK_MESSAGE_TYPE,
+        content: pending.text,
+        display: true,
+        details: { sideChatId: pending.sideChatId, title: pending.title },
+      },
+    };
+  }
+
+  private bringBack(sideChat: SideChat, ctx: ExtensionCommandContext): OverlayNotice {
+    const ownEntries = sideChat.ownEntries();
+    const blocked = bringBackBlockedReason({
+      sideChatId: sideChat.id,
+      mainIsIdle: ctx.isIdle(),
+      mainHasQueuedMessages: ctx.hasPendingMessages(),
+      sideChatBusy: sideChat.busy,
+      hasFinishedReply: hasFinishedReply(ownEntries),
+      pending: this.pendingBringBack,
+    });
+    if (blocked !== null) return { text: blocked, tone: "warning" };
+    this.pendingBringBack = { sideChatId: sideChat.id, title: sideChat.title, text: renderBringBack(sideChat.title, ownEntries) };
+    ctx.ui.setStatus(BRING_BACK_STATUS_KEY, ctx.ui.theme.fg("accent", `Bring back waits: ${sideChat.title}`));
+    return { text: "Brought back. The main thread gets this side chat with your next message there.", tone: "success" };
   }
 
   /** Stops the main agent's first `edit` or `write` of a file that a side chat changed since the agent read it. */
@@ -132,6 +177,7 @@ export class SideChatRegistry {
           startInInput,
           actions: {
             close: () => done(),
+            bringBack: () => this.bringBack(sideChat, ctx),
             delete: () => {
               void (async () => {
                 if (sideChat.hasMessages) {
