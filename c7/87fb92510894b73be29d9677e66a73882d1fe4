@@ -1,0 +1,26 @@
+README.md
+  h_62d5984d259ab3 6,14,53,80-100
+docs/verification.md
+  h_62d5984d259ab3 73-83
+src/bringBack.ts
+  h_62d5984d259ab3 1-112
+src/index.ts
+  h_62d5984d259ab3 17
+src/overlay.ts
+  h_62d5984d259ab3 42-47,52-53,171-173,431,433-435
+src/registry.ts
+  h_62d5984d259ab3 2-3,11-17,28,31-32,45,63-95,180
+test/bringBack.test.ts
+  h_62d5984d259ab3 1-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c787fb92510894b73be29d9677e66a73882d1fe4",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
