@@ -1,13 +1,14 @@
 import type { Api, Model } from "@earendil-works/pi-ai";
-import type {
-  BeforeAgentStartEvent,
-  BeforeAgentStartEventResult,
-  ExtensionAPI,
-  ExtensionCommandContext,
-  ExtensionContext,
-  ToolCallEvent,
-  ToolCallEventResult,
-  ToolResultEvent,
+import {
+  type BeforeAgentStartEvent,
+  type BeforeAgentStartEventResult,
+  type ExtensionAPI,
+  type ExtensionCommandContext,
+  type ExtensionContext,
+  getAgentDir,
+  type ToolCallEvent,
+  type ToolCallEventResult,
+  type ToolResultEvent,
 } from "@earendil-works/pi-coding-agent";
 import {
   BRING_BACK_MESSAGE_TYPE,
@@ -28,8 +29,10 @@ import {
 import { chooseForkPoint } from "./fork.ts";
 import { ModelPicker, modelKey } from "./modelPicker.ts";
 import { type OverlayNotice, SideChatOverlay } from "./overlay.ts";
+import type { ThinkingLevel } from "./child.ts";
 import { BUSY_SETTING_MESSAGE, type MainThread, SideChat, type SideChatHooks } from "./sideChat.ts";
 import { approvalNote, type StatusRow, stateLabel, statusKey, statusWidget } from "./status.ts";
+import { deleteStoredSideChat, loadStoredSideChats, removeOrphans, type StoredSideChat, sideChatsDirFor, sideChatsRoot } from "./store.ts";
 
 const WIDGET_KEY = "side-chat";
 const APPROVAL_STATUS_KEY = "side-chat-approval";
@@ -55,13 +58,27 @@ export class SideChatRegistry {
   private pendingBringBack: PendingBringBack | undefined;
   private openSideChatId: string | undefined;
   private shownStatus: string | undefined;
+  /** Where the side chats of the main session are saved. Undefined when the main session is not saved. */
+  private storeDir: string | undefined;
 
   constructor(private readonly pi: ExtensionAPI) {}
 
-  /** The main session started, or the extension runtime was replaced. Its leaf is settled now. */
+  /**
+   * The main session started, or the extension runtime was replaced. Its leaf is settled now.
+   * Its saved side chats come back, and the files of deleted main sessions go.
+   */
   onSessionStart(ctx: ExtensionContext): void {
     this.mainContext = ctx;
     this.stableLeafId = ctx.sessionManager.getLeafId();
+    const agentDir = getAgentDir();
+    this.storeDir = ctx.sessionManager.getSessionFile() ? sideChatsDirFor(agentDir, ctx.sessionManager.getSessionId()) : undefined;
+    try {
+      removeOrphans(sideChatsRoot(agentDir));
+      if (this.storeDir) for (const stored of loadStoredSideChats(this.storeDir)) this.add(this.restoreSideChat(stored, ctx));
+    } catch (error) {
+      if (ctx.hasUI) ctx.ui.notify(`Side chats: ${error instanceof Error ? error.message : String(error)}`, "warning");
+    }
+    this.refreshStatus();
   }
 
   onMainSettled(ctx: ExtensionContext): void {
@@ -70,7 +87,8 @@ export class SideChatRegistry {
   }
 
   onSessionShutdown(ctx: ExtensionContext): void {
-    for (const sideChat of [...this.sideChats]) this.remove(sideChat);
+    // Saved side chats stay on disk; the next start of this main session brings them back.
+    for (const sideChat of [...this.sideChats]) this.forget(sideChat);
     this.pendingBringBack = undefined;
     if (ctx.hasUI) {
       ctx.ui.setWidget(WIDGET_KEY, undefined);
@@ -164,19 +182,38 @@ export class SideChatRegistry {
     },
   };
 
-  private createSideChat(ctx: ExtensionCommandContext): SideChat {
-    const main: MainThread = {
+  private mainThread(ctx: ExtensionContext): MainThread {
+    return {
       cwd: ctx.cwd,
+      sessionFile: ctx.sessionManager.getSessionFile(),
       modelRegistry: ctx.modelRegistry,
       branch: () => ctx.sessionManager.getBranch(),
       isIdle: () => ctx.isIdle(),
       systemPrompt: () => ctx.getSystemPrompt(),
     };
+  }
+
+  private createSideChat(ctx: ExtensionCommandContext): SideChat {
     return new SideChat({
       fork: chooseForkPoint(ctx.sessionManager.getBranch(), this.stableLeafId, ctx.isIdle()),
-      main,
+      ...(this.storeDir ? { storeDir: this.storeDir } : {}),
+      main: this.mainThread(ctx),
       model: ctx.model,
       thinkingLevel: this.pi.getThinkingLevel(),
+      hooks: this.hooks,
+    });
+  }
+
+  /** A saved side chat, with the model and thinking level of its last run. */
+  private restoreSideChat(stored: StoredSideChat, ctx: ExtensionContext): SideChat {
+    const context = stored.sessionManager.buildSessionContext();
+    const model = context.model ? ctx.modelRegistry.find(context.model.provider, context.model.modelId) : undefined;
+    return new SideChat({
+      fork: { leafId: stored.marker.forkLeafId, inherited: [] },
+      stored,
+      main: this.mainThread(ctx),
+      model: model ?? ctx.model,
+      thinkingLevel: context.thinkingLevel as ThinkingLevel,
       hooks: this.hooks,
     });
   }
@@ -190,7 +227,15 @@ export class SideChatRegistry {
     return sideChat;
   }
 
+  /** Deletes a side chat, with its file. */
   private remove(sideChat: SideChat): void {
+    const path = sideChat.path;
+    this.forget(sideChat);
+    if (path) deleteStoredSideChat(path);
+  }
+
+  /** Lets go of a side chat in this process. Its file stays. */
+  private forget(sideChat: SideChat): void {
     const index = this.sideChats.indexOf(sideChat);
     if (index >= 0) this.sideChats.splice(index, 1);
     this.stopWatching.get(sideChat.id)?.();

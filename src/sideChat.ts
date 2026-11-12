@@ -13,6 +13,7 @@ import { createChildSession, type ThinkingLevel } from "./child.ts";
 import { buildSideChatContext } from "./context.ts";
 import { activitySince, type ForkPoint } from "./fork.ts";
 import { createMainThreadReadTool } from "./mainThreadRead.ts";
+import { SIDE_CHAT_ENTRY_TYPE, type SideChatMarker, storeSession } from "./store.ts";
 import { modelKey, nextThinkingLevel } from "./modelPicker.ts";
 import { streamingText, type TranscriptItem, transcriptFromEntries } from "./transcript.ts";
 
@@ -23,8 +24,6 @@ import { streamingText, type TranscriptItem, transcriptFromEntries } from "./tra
  * without a message costs nothing.
  */
 
-/** The custom entry that ends the inherited part of a side chat session. */
-export const SIDE_CHAT_ENTRY_TYPE = "side-chat";
 /** The custom message that carries the side chat context with the first question. */
 export const SIDE_CHAT_CONTEXT_TYPE = "side-chat-context";
 export const DEFAULT_TITLE = "Side chat";
@@ -34,6 +33,8 @@ const TITLE_MAX_CHARS = 60;
 /** What a side chat reads from the main session. */
 export interface MainThread {
   readonly cwd: string;
+  /** The main session file, which a stored side chat names. Undefined when the main session is not saved. */
+  readonly sessionFile: string | undefined;
   readonly modelRegistry: ModelRegistry;
   branch(): SessionEntry[];
   isIdle(): boolean;
@@ -56,9 +57,18 @@ export interface SideChatHooks {
   runChangedFiles(sideChat: SideChat, absolutePaths: string[]): void;
 }
 
+/** A side chat read back from its file. */
+export interface StoredSideChatSource {
+  marker: SideChatMarker;
+  sessionManager: SessionManager;
+}
+
 export interface SideChatOptions {
-  id?: string;
   fork: ForkPoint;
+  /** Set for a side chat read back from disk; `fork` then holds no inherited entries. */
+  stored?: StoredSideChatSource;
+  /** Where to save the side chat when its first message goes out. Undefined keeps it in memory. */
+  storeDir?: string;
   main: MainThread;
   model: Model<Api> | undefined;
   thinkingLevel: ThinkingLevel | undefined;
@@ -86,8 +96,10 @@ export class SideChat {
   private readonly hooks: SideChatHooks;
   /** Files that the current run changed, in the order of their first change. */
   private readonly runChanges = new Set<string>();
+  private readonly storeDir: string | undefined;
   private draftModel: Model<Api> | undefined;
   private draftThinkingLevel: ThinkingLevel | undefined;
+  private sessionManager: SessionManager | undefined;
   private session: AgentSession | undefined;
   private sessionStart: Promise<AgentSession> | undefined;
   private contextDelivered = false;
@@ -103,8 +115,14 @@ export class SideChat {
   private unsubscribe: (() => void) | undefined;
 
   constructor(options: SideChatOptions) {
-    this.id = options.id ?? randomUUID();
+    this.id = options.stored?.marker.id ?? randomUUID();
     this.fork = options.fork;
+    this.storeDir = options.storeDir;
+    if (options.stored) {
+      this.title = options.stored.marker.title;
+      this.sessionManager = options.stored.sessionManager;
+      this.contextDelivered = true;
+    }
     this.main = options.main;
     this.hooks = options.hooks;
     this.draftModel = options.model;
@@ -120,7 +138,7 @@ export class SideChat {
   get state(): SideChatState {
     if (this.approvals.length > 0) return "approval";
     if (this.runActive) return this.session ? "running" : "starting";
-    return this.session ? "idle" : "draft";
+    return this.sessionManager ? "idle" : "draft";
   }
 
   get busy(): boolean {
@@ -157,10 +175,15 @@ export class SideChat {
     return this.transcriptCache.items;
   }
 
+  /** The file of a saved side chat. Undefined while it is in memory only. */
+  get path(): string | undefined {
+    return this.sessionManager?.getSessionFile();
+  }
+
   /** The entries after the marker that ends the inherited part. */
   ownEntries(): SessionEntry[] {
-    if (!this.session) return [];
-    const branch = this.session.sessionManager.getBranch();
+    if (!this.sessionManager) return [];
+    const branch = this.sessionManager.getBranch();
     const markerIndex = branch.findIndex((entry) => entry.type === "custom" && entry.customType === SIDE_CHAT_ENTRY_TYPE);
     return branch.slice(markerIndex + 1);
   }
@@ -280,8 +303,8 @@ export class SideChat {
   }
 
   private async startSession(): Promise<AgentSession> {
-    const sessionManager = SessionManager.inMemory(this.main.cwd, { id: this.id }, structuredClone(this.fork.inherited));
-    sessionManager.appendCustomEntry(SIDE_CHAT_ENTRY_TYPE, { id: this.id, forkLeafId: this.fork.leafId });
+    const sessionManager = this.sessionManager ?? this.seedSessionManager();
+    this.sessionManager = sessionManager;
     const session = await createChildSession({
       cwd: this.main.cwd,
       systemPrompt: this.main.systemPrompt(),
@@ -323,6 +346,18 @@ export class SideChat {
       }
     });
     return session;
+  }
+
+  /** The inherited entries and the marker, saved to a file when the side chat has a place on disk. */
+  private seedSessionManager(): SessionManager {
+    const seed = SessionManager.inMemory(
+      this.main.cwd,
+      { id: this.id, ...(this.main.sessionFile ? { parentSession: this.main.sessionFile } : {}) },
+      structuredClone(this.fork.inherited),
+    );
+    const marker: SideChatMarker = { id: this.id, title: this.title, forkLeafId: this.fork.leafId };
+    seed.appendCustomEntry(SIDE_CHAT_ENTRY_TYPE, marker);
+    return this.storeDir ? storeSession(seed, this.storeDir) : seed;
   }
 
   private endRun(): void {

@@ -38,7 +38,7 @@ Its title is the first line of your first question.
 The top right corner shows the model, the thinking level, and the permission mode.
 
 A side chat that never got a message goes away when you close it.
-A session switch, `/reload`, or quitting pi ends the side chats that run.
+A session switch, `/reload`, or quitting pi stops the side chats that run. They are saved, so they come back with their main session; see [Saved side chats](#saved-side-chats).
 
 ### Several side chats
 
@@ -158,12 +158,30 @@ The `main_thread_read` tool reads the same digest again at any time, with the ma
 The side chat uses the main session's system prompt, and starts with its model and thinking level.
 It loads no extensions, skills, or context files of its own, so it has only the tools listed above.
 
+## Saved side chats
+
+When the main session is saved, each side chat is saved as a pi session file of its own:
+
+```
+~/.pi/agent/side-chats/<main session id>/<side chat id>.jsonl
+```
+
+The file is written when the first message goes out, so a side chat that never got one leaves no file.
+It starts with a copy of what the side chat inherited from the main thread, so it opens without the main session file, and its header names the main session file.
+
+- **Coming back.** When the main session starts again, for example after `/resume` or `pi -c`, its side chats are listed again, with their model and thinking level. Open one with `/side` and go on. A run that was going when pi stopped does not go on by itself.
+- **Deleting.** `d` and Yes delete the file, and the folder when it was the last one.
+- **Cleanup.** At each session start, side chat files whose main session file is gone are deleted, with the folders that end up empty. Pi writes a new main session file only after the first reply, so a file must be older than one hour to go.
+
+With `--no-session`, side chats stay in memory and end with the session.
+
 ## Limitations
 
 - **Interactive mode only.** In RPC, JSON, and print mode, the commands only warn.
 - **Each first question costs a full read.** The side chat has other tools than the main session, so the provider cannot reuse the main session's prompt cache. The first run reads the whole conversation at full price.
 - **`bash` changes are not tracked.** A side chat that changes files with `npm install`, `sed -i`, or `git checkout` sends no note, and the main agent is not stopped.
 - **A small model can misread the main thread.** In tests of pi-recap, small models sometimes reported a finished step as open. A side chat on a cheap model can describe the state of the main thread wrongly.
+- **A copy per side chat.** Each saved side chat holds its own copy of the main conversation up to its starting point, as `/fork` does.
 - **No extension tools.** The side chat has no MCP tools, no web search, and no other extension tools.
 
 ## Contributing

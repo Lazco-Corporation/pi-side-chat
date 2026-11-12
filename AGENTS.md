@@ -30,6 +30,10 @@ All source sits under `src/`.
 | `approval.ts` | which calls wait for the user, in the first run and in each mode |
 | `changes.ts` | the files that side chats changed, the stop on the main agent's stale writes, and the change note |
 | `mainThreadRead.ts` | the `main_thread_read` tool |
+| `bringBack.ts` | the Bring back note, when it is available, and the newest reply check |
+| `modelPicker.ts` | the model list over the overlay, and the thinking level steps |
+| `status.ts` | the widget above the editor and the approval note in the footer |
+| `store.ts` | the side chat files: writing, loading, deleting, and removing orphans |
 | `transcript.ts` | the overlay transcript, built from the side chat's own entries |
 | `overlay.ts` | the overlay with the transcript, the approval, the input line, the scroll, and the keys |
 | `emphasis.ts` | copied from pi-recap: the fix that lets the overlay parse `**` bold and `*` italic next to CJK punctuation |
@@ -40,7 +44,7 @@ All source sits under `src/`.
 
 ## Testing
 
-Unit tests cover the logic in `fork.ts`, `context.ts`, `approval.ts`, `changes.ts`, `mainThreadRead.ts`, and `transcript.ts`.
+Unit tests cover the logic in every module except `overlay.ts`, `registry.ts`, `child.ts`, and `index.ts`, which need a running pi.
 Every change to the behavior also needs an end-to-end run in Pi-Bolt inside tmux, recorded in `docs/verification.md`.
 Load the extension with `pi-bolt --no-extensions -e <path to src/index.ts>`, and once with all installed extensions.
 

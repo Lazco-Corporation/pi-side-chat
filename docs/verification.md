@@ -109,3 +109,16 @@ Run on 2026-11-12 with `--no-extensions`, in regular mode.
 | Choose 1, press `y`, then `q` | The widget showed `running`, and the approval note left the footer. After the 15 seconds, the row turned to `new reply` without the overlay open. Opening it showed `✓ bash sleep 15 && echo alpha-done` and `alpha-done`. |
 | `b` in side chat 2, then `b` in side chat 1 | Side chat 2: "Brought back…". Side chat 1: `Side chat "Say beta and nothing else." already waits to go back. Send a message in the main thread first.` |
 | Delete side chat 2 with `d` and Yes | The widget listed only side chat 1, still `idle`. The Bring back note of side chat 2 still waited, since it had been taken already. |
+
+## L6: side chats on disk
+
+Run on 2026-11-12 with `--session-dir /tmp/sc-sessions`, so the main session was saved. Before the run, `~/.pi/agent/side-chats` did not exist, though every earlier run had side chats: with `--no-session`, nothing was written.
+
+| Scenario | Result |
+| --- | --- |
+| `/side Remember: the side code is OTTER.`, then `q`; `/side`, New side chat, `Esc`, `q` | One file: `~/.pi/agent/side-chats/<main session id>/<side chat id>.jsonl`, 11 lines, whose header named the main session file. The empty side chat left no file. |
+| `/quit`, then `pi-bolt --continue` with the same session folder | The widget showed `Side chats (1)` with `Remember: the side code is OTTER… · idle` before any command. |
+| `/side`, choose it, ask "What is the side code?" | The transcript showed the earlier question and answer, and the side chat answered `OTTER`. The file grew to 13 lines. |
+| `d`, Yes | The file and its folder were deleted. |
+| A new side chat with a message; `/quit`; the main session file moved to the trash; the side chat file's time set two hours back; a new pi session started | The side chat file and its folder were deleted at session start. |
+| A side chat file whose main session file is missing but that is younger than one hour | Kept. Covered by `test/store.test.ts`, since pi writes a new main session file only after its first reply. |

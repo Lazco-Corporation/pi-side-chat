@@ -13,6 +13,7 @@ function draftSideChat(authorized: (model: Model<Api>) => boolean): SideChat {
     fork: { leafId: null, inherited: [] },
     main: {
       cwd: "/work",
+      sessionFile: undefined,
       modelRegistry: { hasConfiguredAuth: authorized } as unknown as ModelRegistry,
       branch: () => [],
       isIdle: () => true,
