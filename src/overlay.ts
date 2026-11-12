@@ -436,7 +436,8 @@ export class SideChatOverlay implements Component, Focusable {
       ? theme.fg("dim", `${this.scrollTop + 1}-${this.scrollTop + this.viewportHeight} of ${this.contentHeight}`)
       : "";
     const approve = this.sideChat.approvals.length > 0 ? [hint("y/n", "approve/deny")] : [];
-    const close = hint("esc", this.sideChat.busy ? "stop" : "close");
+    // While the side chat runs, esc stops it, so q is the way to leave it running in the background.
+    const close = this.sideChat.busy ? `${hint("esc", "stop")}${separator}${hint("q", "close")}` : hint("esc", "close");
     const ask = hint("tab", "ask");
     const mode = hint("p", this.sideChat.mode === "ask" ? "auto mode" : "ask mode");
     const model = this.sideChat.busy ? [] : [hint("m", "model"), hint("t", "thinking")];

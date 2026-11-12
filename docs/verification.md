@@ -96,3 +96,16 @@ Run on 2026-11-12 with `--no-extensions`. The main session used `google-sub/gemi
 | `m`, choose `google-sub/gemini-3.8-flash`, ask again | The title bar showed `google-sub/gemini-3.8-flash · high · ask`: `xhigh` became `high`, the nearest level that model supports. The answer was "Google". |
 | After all of it | The main footer still showed `google-sub/gemini-3.8-flash • low`, and `settings.json` still held `anthropic-sub/claude-opus-5-5` and `high`. |
 | A model without a key | `getAvailable()` lists only models with a key or a login, so the list cannot offer one. The refusal path is covered by `test/sideChat.test.ts`: the error names the model, and the old model and level stay. |
+
+## L5: several side chats in the background
+
+Run on 2026-11-12 with `--no-extensions`, in regular mode.
+
+| Scenario | Result |
+| --- | --- |
+| `/side Run this bash command: sleep 15 && echo alpha-done…`, then `q` while its first `bash` waits | The footer showed `esc stop · q close`. After `q`, the widget showed `◆ Run this bash command… · waits for approval`, and the footer of pi showed `Side chat "…" waits for approval. Run /side to answer.` |
+| `/btw Say beta and nothing else.`, then `q` after the reply | The widget listed both: the first `waits for approval`, the second `idle`. |
+| `/side` | A list opened with `New side chat`, `1. Run this bash command… · waits for approval`, and `2. Say beta… · idle`. |
+| Choose 1, press `y`, then `q` | The widget showed `running`, and the approval note left the footer. After the 15 seconds, the row turned to `new reply` without the overlay open. Opening it showed `✓ bash sleep 15 && echo alpha-done` and `alpha-done`. |
+| `b` in side chat 2, then `b` in side chat 1 | Side chat 2: "Brought back…". Side chat 1: `Side chat "Say beta and nothing else." already waits to go back. Send a message in the main thread first.` |
+| Delete side chat 2 with `d` and Yes | The widget listed only side chat 1, still `idle`. The Bring back note of side chat 2 still waited, since it had been taken already. |

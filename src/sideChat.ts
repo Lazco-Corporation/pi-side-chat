@@ -142,7 +142,7 @@ export class SideChat {
 
   /** True once the user sent a message. A side chat without one is dropped when it closes. */
   get hasMessages(): boolean {
-    return this.runActive || this.ownEntries().some((entry) => entry.type === "message");
+    return this.runActive || this.transcript().some((item) => item.kind === "user");
   }
 
   /** The text of the reply that the model writes now. Empty when it writes none. */

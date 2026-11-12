@@ -29,19 +29,33 @@ Then run `/reload` in pi.
 
 | Command | What it does |
 | --- | --- |
-| `/side <question>` | Opens a side chat and asks the question. |
+| `/side <question>` | Starts a new side chat and asks the question. |
 | `/btw <question>` | The same as `/side`. |
-| `/side` | Opens the side chat, or a new empty one with the input line ready. |
+| `/side` | Lists the side chats to open one, or starts a new empty side chat. |
 
 The side chat opens in an overlay over the chat.
 Its title is the first line of your first question.
 The top right corner shows the model, the thinking level, and the permission mode.
 
-There is one side chat at a time.
-To start another, open it with `/side`, press `d`, and confirm.
 A side chat that never got a message goes away when you close it.
-Closing the overlay does not stop a side chat that runs: open it again with `/side`.
-A session switch, `/reload`, or quitting pi ends the side chat.
+A session switch, `/reload`, or quitting pi ends the side chats that run.
+
+### Several side chats
+
+Each `/side <question>` starts a new side chat, and they run side by side.
+`/side` alone lists them, with **New side chat** on top, so you can open one again.
+
+Press `q` to close the overlay and leave the side chat running.
+While side chats exist, a widget above the editor lists each of them with its state:
+
+| State | Meaning |
+| --- | --- |
+| `running` | The side chat works on your message. |
+| `waits for approval` | A call waits for `y` or `n`. The footer of pi also says so. |
+| `new reply` | A run ended while its overlay was closed. |
+| `idle` | Nothing new since you looked. |
+
+Press `d` in a side chat to delete it, after a confirmation.
 
 ### Keys
 
@@ -62,7 +76,7 @@ The overlay has a browse mode with one-letter keys, and an input line for typing
 | `Home` `End` `g` `G` | Go to the top or the bottom |
 | Mouse drag | Select text and copy it, in fullscreen mode |
 | `Esc` | Stop the run, or close the overlay when nothing runs |
-| `q` | Close the overlay |
+| `q` | Close the overlay, and leave a run going in the background |
 
 In the input line, `Enter` sends and `Esc` goes back to the keys, with your text kept.
 A message that you send while the side chat runs waits for the run to end.
