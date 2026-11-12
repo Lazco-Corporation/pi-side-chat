@@ -43,3 +43,19 @@ Consequences for the design:
 
 - The model picker of L4 may open as a second `ctx.ui.custom()` overlay or as `ctx.ui.select()`, since both get the focus over the side chat overlay. `ctx.ui.select()` has no text filter, so the picker is a custom component.
 - The side chat has no `tool_result` for a denied call, so a denied call is recorded where it is denied.
+
+## L1: one side chat
+
+Run on 2026-11-12 with `src/index.ts`, in regular mode and in fullscreen mode.
+
+| Scenario | Result |
+| --- | --- |
+| The main thread is idle and holds "pineapple". `/side What is the secret word?` | The overlay opened with the question as its title, and the side chat answered "pineapple". The main thread got no message. |
+| `/btw` asks the side chat to `write` a file in its first run; the user presses `p` (auto), then `n` | The approval showed `write a.txt` with "The first run of a side chat asks before every change." even in auto mode. After `n`, the call showed as denied, the model said the file could not be created, and no file existed. |
+| Second run in auto mode asks for the same `write` | No approval. The call showed `✓ write a.txt`, and the file held `hello`. |
+| Third run in ask mode asks for `bash echo approved-run` | The approval showed the command with "The mode is ask. Press p for auto." After `y`, the command ran. |
+| `/side another question` while a side chat with messages exists | Warning: "A side chat is already open. Run /side to open it, and press d there to delete it first." No new side chat. |
+| `d` in the overlay | A confirm dialog opened over the overlay. Yes removed the side chat. |
+| The main agent runs `sleep 30 && echo main-done`; `/side What is the main thread doing right now?` | The side chat answered `sleep 30 && echo main-done` from the activity digest. The main run went on and ended with `DONE`. |
+| Fullscreen mode, during the first run of a new session (no settled leaf); `/side 主 thread 現在在跑什麼指令？` | The side chat answered in Chinese with `sleep 25 && echo first-done`, from a digest of the whole branch. |
+| Chinese in the overlay input | `中文輸入測試` rendered after `› `, and the hardware cursor sat right after it (column 32 for a frame at column 16). |
