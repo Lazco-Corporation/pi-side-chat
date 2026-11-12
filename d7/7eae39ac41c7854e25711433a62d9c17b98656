@@ -1,0 +1,14 @@
+CHANGELOG.md
+  h_62d5984d259ab3 6-11,34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d77eae39ac41c7854e25711433a62d9c17b98656",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
