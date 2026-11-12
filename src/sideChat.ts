@@ -361,6 +361,8 @@ export class SideChat {
     );
     const marker: SideChatMarker = { id: this.id, title: this.title, forkLeafId: this.fork.leafId };
     seed.appendCustomEntry(SIDE_CHAT_ENTRY_TYPE, marker);
+    // The session name makes the file readable in pi's own session tools, instead of the main session's name.
+    seed.appendSessionInfo(this.title);
     return this.storeDir ? storeSession(seed, this.storeDir) : seed;
   }
 

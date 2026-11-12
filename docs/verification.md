@@ -134,3 +134,14 @@ Run on 2026-11-12 in fullscreen mode, with every installed extension loaded and 
 | The user asks the main agent what the side chat output | The Bring back note went with the message, and the main agent answered "The side chat output was full-env-check." |
 
 The custom footer of pi-statusline in this setup does not draw extension statuses, so `Bring back waits: …` did not show there; the default footer shows it, as in the L3 run.
+
+## Checks after 0.2.1
+
+Run on 2026-11-12 with `--no-extensions` and `--session-dir`.
+
+| Scenario | Result |
+| --- | --- |
+| While the side chat counts to 60, `Tab`, "Now say QUEUED-DONE.", `Enter` | "Queued. It goes to the side chat after this run." After the count, the side chat answered `QUEUED-DONE.` |
+| The saved side chat file | Holds one `session_info` entry with the side chat's title. |
+| A `bash` call waits for approval in ask mode; the user presses `Esc` | The run stopped: the call showed `✗ bash echo should-not-run` with `Stopped.`, and no output, so the command never ran. |
+| Child session settings | `createAgentSession` reads the same global and project settings as the main session (`SettingsManager.create(cwd, agentDir)`), so automatic compaction of a side chat follows the main session's setting. |
