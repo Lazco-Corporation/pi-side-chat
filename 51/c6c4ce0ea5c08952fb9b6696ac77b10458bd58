@@ -1,0 +1,28 @@
+README.md
+  h_62d5984d259ab3 32,34,41-58,79
+docs/verification.md
+  h_62d5984d259ab3 99-111
+src/index.ts
+  h_62d5984d259ab3 16
+src/overlay.ts
+  h_62d5984d259ab3 439-440
+src/registry.ts
+  h_62d5984d259ab3 32,34-35,37,40,49-52,56-57,72-73,75-81,115,123-126,129-143,184-188,190,196-199,202-302
+src/sideChat.ts
+  h_62d5984d259ab3 145
+src/status.ts
+  h_62d5984d259ab3 1-65
+test/status.test.ts
+  h_62d5984d259ab3 1-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51c6c4ce0ea5c08952fb9b6696ac77b10458bd58",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
