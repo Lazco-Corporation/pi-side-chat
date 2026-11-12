@@ -1,0 +1,30 @@
+README.md
+  h_62d5984d259ab3 13,56-57,70-86,144,152
+docs/verification.md
+  h_62d5984d259ab3 84-98
+src/child.ts
+  h_62d5984d259ab3 25
+src/modelPicker.ts
+  h_62d5984d259ab3 1-137
+src/overlay.ts
+  h_62d5984d259ab3 54-55,173-183,442,447-448
+src/registry.ts
+  h_62d5984d259ab3 1,29,31,84-99,199
+src/sideChat.ts
+  h_62d5984d259ab3 2,16,31,168-198
+test/modelPicker.test.ts
+  h_62d5984d259ab3 1-25
+test/sideChat.test.ts
+  h_62d5984d259ab3 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "317b1b1296a2900124638b89b73fc9b1721e2c0b",
+  "prompts": {},
+  "humans": {
+    "h_62d5984d259ab3": {
+      "author": "OnCloud <onc125252@gmail.com>"
+    }
+  }
+}
