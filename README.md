@@ -6,7 +6,9 @@ Pi extension: `/side` and `/btw` open a side chat beside the main thread, with i
 
 [![npm](https://img.shields.io/npm/v/@lazco/pi-side-chat)](https://www.npmjs.com/package/@lazco/pi-side-chat) [![License](https://img.shields.io/npm/l/@lazco/pi-side-chat)](LICENSE)
 
-[Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [Bring back](#bring-back) · [Limitations](#limitations)
+<img src="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/demo.gif" width="720" alt="While the main agent works, the user types /btw with a question. A side chat overlay opens and answers, and the main agent keeps working behind it.">
+
+[Demo video](#demo-video) · [Installation](#installation) · [Usage](#usage) · [Approvals](#approvals) · [Bring back](#bring-back) · [Limitations](#limitations)
 
 </div>
 
@@ -22,6 +24,13 @@ It starts from what the main thread knows, and it can read and change files in t
 - **One key to bring back.** Press `b`, and the side chat goes into the next main message, at most 20000 characters. See [Bring back](#bring-back).
 - **The main agent learns what changed.** It gets the names of the files that a side chat changed, and its first write to such a file is stopped. See [Side chat changes](#side-chat-changes).
 - **Several side chats, each with its own model.** They run side by side, and they are saved with the main session. See [Several side chats](#several-side-chats).
+
+## Demo video
+
+The 60-second video shows the install, `/btw` while the main agent works, an approval, bring back, a second side chat with its own model, and the `/side` list.
+Click the image to play the video.
+
+<a href="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/Demo.mp4"><img src="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/demo-poster.png" width="720" alt="A frame of the demo video. The side chat overlay answers which function reads the config file, while the main agent shows Working behind it."></a>
 
 ## Installation
 
@@ -54,6 +63,8 @@ The title of the overlay is the first line of your first question.
 The top right corner shows the model, the thinking level, and the permission mode.
 The main agent continues, and your question does not go into the main session.
 
+<img src="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/side-chat.png" width="720" alt="The side chat overlay over a busy main thread. Its title is the question, the top right shows claude-sonnet-4-5, off, and ask, and the answer names loadConfig() in src/config.ts.">
+
 A side chat that never got a message goes away when you close it.
 
 ### Keys
@@ -84,6 +95,8 @@ A message that you send while the side chat runs waits until the run ends.
 
 Each `/side <question>` starts a new side chat, and the side chats run side by side.
 `/side` alone lists them, with **New side chat** at the top.
+
+<img src="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/side-chat-list.png" width="720" alt="The /side list with New side chat at the top and two idle side chats below it.">
 
 While side chats exist, a widget above the editor lists each side chat with its state:
 
@@ -130,6 +143,8 @@ A waiting call shows its command or its file above the input line.
 Press `y` to let it run, or `n` to deny it.
 The model gets "The user denied this call." for a denied call.
 When you stop the run, every call that waits is denied.
+
+<img src="https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/approval.png" width="720" alt="The side chat asks: Approve edit? src/config.ts. The hint line says y approve, n deny, and that the mode is ask.">
 
 ## Bring back
 
