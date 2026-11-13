@@ -3,6 +3,17 @@
 All releases of `@lazco/pi-side-chat` are in this file.
 The newest release is at the top.
 
+## [0.2.2] - 2026-11-14
+
+### Changed
+
+- The session file of a side chat has the title of the side chat as its name, so pi's own session tools show it by its question, not by the name of the main session.
+
+### Docs
+
+- The README is a public product page, with a demo GIF, a 60-second demo video, and screenshots of the overlay, an approval, and the side chat list.
+- The pi package manifest has a demo video and an image.
+
 ## [0.2.1] - 2026-11-12
 
 ### Fixed
@@ -32,6 +43,7 @@ The newest release is at the top.
 - When a side chat changes files with `edit` or `write`, the main agent gets a note that names them.
 - The main agent's first `edit` or `write` of such a file is stopped until it reads the file again.
 
+[0.2.2]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/Lazco-Corporation/pi-side-chat/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Lazco-Corporation/pi-side-chat/releases/tag/v0.1.0
