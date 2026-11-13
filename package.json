@@ -32,7 +32,9 @@
   "pi": {
     "extensions": [
       "./src/index.ts"
-    ]
+    ],
+    "image": "https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/side-chat.png",
+    "video": "https://lazco-public-15298932ec.pub.t4.txg1.lazco.cloud/pi-side-chat/Demo.mp4"
   },
   "peerDependencies": {
     "@earendil-works/pi-ai": "*",
